@@ -1,0 +1,133 @@
+{
+  "translation": {
+    "settings": {
+      "title": "Marketplace 设置",
+      "optionsHeading": "选项",
+      "starCountLabel": "星标数",
+      "tagsLabel": "标签",
+      "showArchived": "显示已存档仓库",
+      "devToolsLabel": "主题开发者工具",
+      "hideInstalledLabel": "浏览时隐藏已安装项目",
+      "colourShiftLabel": "每分钟切换配色",
+      "albumArtBasedColors": "根据专辑封面更改配色",
+      "albumArtBasedColorsMode": "配色方案 (ColorApi) 模式",
+      "albumArtBasedColorsVibrancy": "专辑封面取色方法",
+      "albumArtBasedColorsVibrancyToolTip": "Desaturated：最突出但较暗的颜色 \n Light Vibrant：最鲜艳的颜色，但略微调亮 \n Prominent：出现最多的颜色 \n Vibrant：最鲜艳的颜色",
+      "albumArtColorsModeToolTip": "Monochrome Dark：直接以所选主色为基础，使用不同色调的主色混合灰色形成配色，与 Monochrome Light 相反。 \n Monochrome Light：直接以所选主色为基础，使用不同色调的主色混合灰色形成配色，Monochrome Light 的背景色将会是 Monochrome Dark 的前景色或文本颜色，反之亦然。 \n Analogic：以所选主色为基础，使用色轮上主色的邻近色形成配色。 \n Analogic Complementary：以所选主色为基础，使用色轮上主色的邻近色和互补色形成配色。 \n Triad：以所选主色为基础，使用色轮上主色的等距色形成配色。 \n Quad：以所选主色为基础，使用色轮上与主色成90度角的颜色形成配色。",
+      "tabsHeading": "标签页",
+      "tabsDescription": "拖放以排序，点击以启用/禁用",
+      "resetHeading": "重置",
+      "resetBtn": "$t(settings.resetHeading)",
+      "resetDescription": "卸载所有扩展和主题，并重置设置",
+      "backupHeading": "备份/还原",
+      "backupLabel": "备份或还原所有 Marketplace 数据，这不会影响其安装的内容。",
+      "backupBtn": "打开",
+      "versionHeading": "版本",
+      "versionBtn": "复制",
+      "versionCopied": "已复制"
+    },
+    "tabs": {
+      "Extensions": "扩展",
+      "Themes": "主题",
+      "Snippets": "片段",
+      "Apps": "应用",
+      "Installed": "已安装"
+    },
+    "snippets": {
+      "addTitle": "添加片段",
+      "duplicateName": "该名称已被使用！",
+      "editTitle": "编辑片段",
+      "viewTitle": "查看片段",
+      "customCSS": "自定义 CSS",
+      "customCSSPlaceholder": "在此处输入你的自定义 CSS！你可以在「已安装」标签页管理它们。",
+      "snippetName": "片段名称",
+      "snippetNamePlaceholder": "输入自定义片段的名称",
+      "snippetDesc": "片段描述",
+      "snippetDescPlaceholder": "输入自定义片段的描述",
+      "snippetPreview": "片段预览",
+      "optional": "选填",
+      "addImage": "添加图像",
+      "changeImage": "更改图像",
+      "saveCSS": "保存 CSS"
+    },
+    "reloadModal": {
+      "title": "重新加载",
+      "description": "需要重新加载页面，才能完成此操作。",
+      "reloadNow": "立即重新加载",
+      "reloadLater": "稍后重新加载"
+    },
+    "backupModal": {
+      "title": "$t(settings.backupHeading)",
+      "settingsCopied": "设置已复制到剪切板",
+      "settingsSaved": "设置已保存到文件",
+      "noDataPasted": "未粘贴数据",
+      "invalidJSON": "无效的 JSON",
+      "inputLabel": "Marketplace 设置",
+      "inputPlaceholder": "在此处复制/粘贴设置",
+      "exportBtn": "导出",
+      "importBtn": "导入",
+      "fileImportBtn": "从文件导入"
+    },
+    "devTools": {
+      "title": "主题开发者工具",
+      "noThemeInstalled": "错误：未安装 Marketplace 主题",
+      "noThemeManifest": "错误：未找到主题清单文件",
+      "colorIniEditor": "Color.ini 编辑器",
+      "colorIniEditorPlaceholder": "[your-colour-scheme-name]",
+      "invalidCSS": "无效的 CSS"
+    },
+    "updateModal": {
+      "title": "更新 Marketplace",
+      "description": "更新 Navify Marketplace 以获取新功能和错误修复。",
+      "currentVersion": "当前版本：{{version}}",
+      "latestVersion": "最新版本：{{version}}",
+      "whatsChanged": "新版变化",
+      "seeChangelog": "查看更新日志",
+      "howToUpgrade": "升级指引",
+      "viewGuide": "查看指南"
+    },
+    "grid": {
+      "navifyMarketplace": "Navify Marketplace",
+      "newUpdate": "有更新",
+      "addCSS": "添加 CSS",
+      "search": "搜索",
+      "installed": "已安装",
+      "lastUpdated": "上次更新于 {{val, datetime}}",
+      "externalJS": "外部 JS",
+      "archived": "已存档",
+      "dark": "深色",
+      "light": "浅色",
+      "sort": {
+        "label": "排序:",
+        "stars": "星标",
+        "newest": "最新",
+        "oldest": "最旧",
+        "lastUpdated": "最近更新",
+        "mostStale": "最久未更新",
+        "aToZ": "A-Z",
+        "zToA": "Z-A"
+      }
+    },
+    "readmePage": {
+      "title": "$t(grid.navifyMarketplace) - README",
+      "loading": "加载中...",
+      "errorLoading": "加载 README 时出错"
+    },
+    "github": "GitHub",
+    "install": "安装",
+    "remove": "移除",
+    "save": "保存",
+    "colour_one": "颜色",
+    "colour_other": "颜色",
+    "favourite": "收藏",
+    "notifications": {
+      "wrongLocalTheme": "请将 config-xpui.ini 中的 current_theme 设置为 'marketplace' 以使用 Marketplace 安装主题",
+      "tooManyRequests": "请求过于频繁，请稍后再试",
+      "noCdnConnection": "Marketplace 无法连接至 CDN，请检查你的网络配置",
+      "markdownParsingError": "解析 markdown 时出错 (HTTP {{status}})",
+      "noReadmeFile": "未找到 README 文件",
+      "themeInstallationError": "安装主题时出错",
+      "extensionInstallationError": "安装扩展时出错"
+    }
+  }
+}

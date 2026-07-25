@@ -1,0 +1,132 @@
+{
+  "translation": {
+    "settings": {
+      "title": "Ajustes de Marketplace",
+      "optionsHeading": "Opciones",
+      "starCountLabel": "Número de estrellas",
+      "tagsLabel": "Etiquetas",
+      "showArchived": "Mostrar repositorios archivados",
+      "devToolsLabel": "Herramientas para desarrolladores de temas",
+      "hideInstalledLabel": "Ocultar lo instalado al navegar",
+      "colourShiftLabel": "Cambiar colores cada minuto",
+      "albumArtBasedColors": "Cambiar los colores según la portada del álbum",
+      "albumArtBasedColorsMode": "Modo de esquema de colores (ColorApi)",
+      "albumArtBasedColorsVibrancy": "Color obtenido de la portada del álbum",
+      "albumArtBasedColorsVibrancyToolTip": "Desaturado: El color más prominente pero con mucha menos brillo \n Vibrante claro: El color más vibrante pero con el brillo aumentado un poco \n Prominente: El color que más destaca en la portada del álbum \n Vibrante: El color más vibrante en la portada del álbum",
+      "albumArtColorsModeToolTip": "Monocromo oscuro: Un esquema de color basado directamente en el color principal seleccionado, usando diferentes tonos del color principal y mezclando con grises para crear un esquema de color, esto es lo inverso de Monocromo claro. \n Monocromo claro: Un esquema de color basado directamente en el color principal seleccionado, usando diferentes tonos del color principal y mezclando con grises para crear un esquema de color. El fondo del monocromo claro sería el primer plano o color de texto en Monocromo oscuro y viceversa. \n Analógico: Un esquema de color basado en el color principal seleccionado, usando los colores adyacentes al color principal en la rueda de colores. \n Complementario analógico: Un esquema de color basado en el color principal seleccionado, usando los colores adyacentes al color principal en la rueda de colores y el color complementario. \n Tríada: Un esquema de color basado en el color principal seleccionado, usando los colores en la rueda de colores que están equidistantes del color principal. \n Cuádruple: Un esquema de color basado en el color principal seleccionado, usando los colores en la rueda de colores que están a 90 grados del color principal.",
+      "tabsHeading": "Pestañas",
+      "tabsDescription": "Arrastre y suelte para cambiar el orden, haga clic para activar/desactivar",
+      "resetHeading": "Restablecer",
+      "resetBtn": "$t(settings.resetHeading)",
+      "resetDescription": "Borrar todas extensiones y temas, y borrar preferencias",
+      "backupHeading": "Copia de seguridad/Restauración",
+      "backupLabel": "Haz una copia de seguridad o restaura todos los datos de Marketplace. Esto no incluye la configuración de nada instalado a través de Marketplace.",
+      "backupBtn": "Abrir",
+      "versionHeading": "Versión",
+      "versionBtn": "Copiar",
+      "versionCopied": "Copiado"
+    },
+    "tabs": {
+      "Extensions": "Extensiones",
+      "Themes": "Temas",
+      "Snippets": "Códigos",
+      "Apps": "Aplicaciones",
+      "Installed": "Instalados"
+    },
+    "snippets": {
+      "addTitle": "Añadir Código",
+      "duplicateName": "¡Ese nombre ya está en uso!",
+      "editTitle": "Editar Código",
+      "viewTitle": "Ver Código",
+      "customCSS": "Custom CSS",
+      "customCSSPlaceholder": "¡Crea tu propio CSS aquí! Puedes encontrarlos en la pestaña de instalados para administrarlos.",
+      "snippetName": "Nombre del código",
+      "snippetNamePlaceholder": "Asígnale un nombre para tu código personalizado",
+      "snippetDesc": "Descripción del código",
+      "snippetDescPlaceholder": "Crea una descripción para tu código personalizado",
+      "snippetPreview": "Código",
+      "optional": "Opcional",
+      "addImage": "Añadir imagen",
+      "changeImage": "Cambiar imagen",
+      "saveCSS": "Guardar CSS"
+    },
+    "reloadModal": {
+      "title": "Recargar",
+      "description": "Es necesario recargar la página para completar esta operación.",
+      "reloadNow": "Recargar ahora",
+      "reloadLater": "Recargar después"
+    },
+    "backupModal": {
+      "title": "$t(settings.backupHeading)",
+      "settingsCopied": "Ajustes copiados al portapapeles",
+      "noDataPasted": "No hay datos pegados",
+      "invalidJSON": "JSON inválido",
+      "inputLabel": "Ajustes de Marketplace",
+      "inputPlaceholder": "Copia/pega tus ajustes aquí",
+      "exportBtn": "Exportar",
+      "importBtn": "Importar",
+      "fileImportBtn": "Importar desde un archivo"
+    },
+    "devTools": {
+      "title": "Herramientas de desarrollador de temas",
+      "noThemeInstalled": "Error: No se ha instalado el tema del marketplace",
+      "noThemeManifest": "Error: No se ha encontrado el manifiesto del tema",
+      "colorIniEditor": "Editor de Color.ini",
+      "colorIniEditorPlaceholder": "[nombre-de-esquema-de-color]",
+      "invalidCSS": "CSS inválido"
+    },
+    "updateModal": {
+      "title": "Actualizar el Marketplace",
+      "description": "Actualiza Navify Marketplace para recibir nuevas funciones y correcciones de errores.",
+      "currentVersion": "Versión actual: {{version}}",
+      "latestVersion": "Última versión: {{version}}",
+      "whatsChanged": "Qué ha cambiado",
+      "seeChangelog": "Ver registro de cambios",
+      "howToUpgrade": "Cómo actualizar",
+      "viewGuide": "Ver guía"
+    },
+    "grid": {
+      "navifyMarketplace": "Marketplace de Navify",
+      "newUpdate": "Nueva actualización",
+      "addCSS": "Añadir CSS",
+      "search": "Buscar",
+      "installed": "Instalado",
+      "lastUpdated": "Última actualización {{val, datetime}}",
+      "externalJS": "JS externo",
+      "archived": "archivado",
+      "dark": "oscuro",
+      "light": "claro",
+      "sort": {
+        "label": "Ordenar por:",
+        "stars": "Estrellas",
+        "newest": "Más nuevo",
+        "oldest": "Más antiguo",
+        "lastUpdated": "Última actualización",
+        "mostStale": "Más desactualizado",
+        "aToZ": "A-Z",
+        "zToA": "Z-A"
+      }
+    },
+    "readmePage": {
+      "title": "$t(grid.navifyMarketplace) - Readme",
+      "loading": "Cargando...",
+      "errorLoading": "Error al cargar el README"
+    },
+    "github": "GitHub",
+    "install": "Instalar",
+    "remove": "Borrar",
+    "save": "Guardar",
+    "colour_one": "color",
+    "colour_other": "colores",
+    "favourite": "favorito",
+    "notifications": {
+      "wrongLocalTheme": "Por favor, establece current_theme en config-xpui.ini como 'marketplace' para instalar temas usando el Marketplace",
+      "tooManyRequests": "Demasiadas solicitudes, espera un momento",
+      "noCdnConnection": "Marketplace no puede conectarse al CDN. Por favor, revisa tu configuración de Internet",
+      "markdownParsingError": "Error al analizar markdown (HTTP {{status}})",
+      "noReadmeFile": "No se encontró el archivo README",
+      "themeInstallationError": "Hubo un error al instalar el tema",
+      "extensionInstallationError": "Hubo un error al instalar la extensión"
+    }
+  }
+}

@@ -1,0 +1,7 @@
+packages:
+  - .
+  - ../navify-creator/packages/navify-creator
+allowBuilds:
+  "@parcel/watcher": true
+  esbuild: true
+  less: true

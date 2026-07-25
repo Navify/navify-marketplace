@@ -1,0 +1,52 @@
+{
+  "name": "marketplace",
+  "version": "1.0.9",
+  "private": true,
+  "homepage": "https://github.com/navify/marketplace",
+  "bugs": {
+    "url": "https://github.com/navify/marketplace/issues"
+  },
+  "repository": "github:navify/marketplace",
+  "scripts": {
+    "build": "navify-creator",
+    "build:local": "node clean-dist.mjs && navify-creator --out=dist --minify",
+    "build:prod": "pnpm build:local && node package-builtins.mjs && node sanitize-build.mjs && pnpm copy:docs",
+    "copy:docs": "copyfiles README.md dist/",
+    "lint": "biome check --write ./src",
+    "lint:ci": "biome check *",
+    "type-check": "tsc --noEmit",
+    "watch": "navify-creator --watch",
+    "prepare": "husky",
+    "update-types": "curl -s -o src/types/navify.d.ts https://raw.githubusercontent.com/navify/cli/main/globals.d.ts"
+  },
+  "dependencies": {
+    "@biomejs/biome": "^2.4.13",
+    "@hello-pangea/dnd": "^18.0.1",
+    "chroma-js": "^3.2.0",
+    "i18next": "^26.3.0",
+    "i18next-browser-languagedetector": "^8.2.0",
+    "prismjs": "^1.30.0",
+    "react-dropdown": "^1.11.0",
+    "react-i18next": "^17.0.6",
+    "react-simple-code-editor": "^0.14.1",
+    "semver": "^7.8.1"
+  },
+  "devDependencies": {
+    "@types/chroma-js": "^3.1.2",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "@types/semver": "^7.7.1",
+    "@types/wicg-file-system-access": "^2023.10.7",
+    "copyfiles": "^2.4.1",
+    "husky": "^9.1.7",
+    "navify-creator": "workspace:*",
+    "typescript": "^6.0.3"
+  },
+  "engines": {
+    "node": ">=24",
+    "npm": "please-use-pnpm",
+    "pnpm": ">=11",
+    "yarn": "please-use-pnpm"
+  },
+  "packageManager": "pnpm@11.9.0"
+}

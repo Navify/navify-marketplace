@@ -1,0 +1,585 @@
+import { t } from "i18next";
+import React, { type Key } from "react";
+import { withTranslation } from "react-i18next";
+
+import { CUSTOM_APP_PATH, LOCALSTORAGE_KEYS, SNIPPETS_PAGE_URL } from "../../constants";
+import { openModal } from "../../logic/LaunchModals";
+import { marketplaceStorage } from "../../logic/Storage";
+import { brandText, generateKey, getLocalStorageDataFromKey, initializeSnippets, injectUserCSS, parseCSS, parseIni } from "../../logic/Utils";
+import type { CardItem, CardType, Config, SchemeIni, Snippet, VisualConfig } from "../../types/marketplace-types";
+import Button from "../Button";
+import DownloadIcon from "../Icons/DownloadIcon";
+import GitHubIcon from "../Icons/GitHubIcon";
+import TrashIcon from "../Icons/TrashIcon";
+import Tooltip from "../Tooltip";
+import AuthorsDiv from "./AuthorsDiv";
+import TagsDiv from "./TagsDiv";
+
+const Navify = window.Navify;
+
+export type CardProps = {
+  // From `fetchExtensionManifest()`, `fetchThemeManifest()`, and snippets.json
+  item: CardItem | Snippet;
+  CONFIG: Config;
+  // From `appendCard()`
+  updateColourSchemes: (SchemeIni, string) => void;
+  updateActiveTheme: (string) => void;
+  type: CardType;
+  visual: VisualConfig;
+  activeThemeKey?: string;
+};
+
+export class Card extends React.Component<
+  CardProps,
+  {
+    installed: boolean;
+    // TODO: Can I remove `stars` from `this`? Or maybe just put everything in `state`?
+    stars: number;
+    tagsExpanded: boolean;
+    externalUrl: string;
+    lastUpdated: string | undefined;
+    created: string | undefined;
+  }
+> {
+  // Theme stuff
+  // cssURL?: string;
+  // schemesURL?: string;
+  // include?: string[];
+  // // Snippet stuff
+  // code?: string;
+  // description?: string;
+  tags: string[];
+
+  // Added locally
+  menuType: typeof Navify.ReactComponent.Menu;
+  localStorageKey: string;
+  key: Key | null = null;
+  type = Card;
+
+  constructor(props: CardProps) {
+    super(props);
+
+    // Added locally
+    // this.menuType = Navify.ReactComponent.Menu | "div";
+    this.menuType = Navify.ReactComponent.Menu;
+
+    this.localStorageKey = generateKey(props);
+
+    Object.assign(this, props);
+
+    // Needs to be after Object.assign so an undefined 'tags' field doesn't overwrite the default []
+    this.tags = props.item.tags || [];
+    if (props.item.include) this.tags.push(t("grid.externalJS"));
+    if (props.item.archived) this.tags.push(t("grid.archived"));
+
+    const itemOwner = props.item.user || "";
+    const itemRepository = props.item.repo || "";
+    const navifyOwned = brandText(itemOwner).toLowerCase() === "navify";
+    const navifyRepository =
+      props.type === "theme" ? "navify-themes" : props.type === "app" || props.type === "extension" ? "navify-marketplace" : itemRepository;
+
+    this.state = {
+      // Initial value. Used to trigger a re-render.
+      // isInstalled() is used for all other intents and purposes
+      installed: marketplaceStorage.getItem(this.localStorageKey) !== null,
+
+      // TODO: Can I remove `stars` from `this`? Or maybe just put everything in `state`?
+      stars: this.props.item.stars || 0,
+      tagsExpanded: false,
+      externalUrl:
+        itemOwner && itemRepository
+          ? navifyOwned
+            ? `https://github.com/Navify/${navifyRepository}`
+            : `https://github.com/${itemOwner}/${itemRepository}`
+          : "",
+      lastUpdated: this.props.item.user && this.props.item.repo ? this.props.item.lastUpdated : undefined,
+      created: this.props.item.user && this.props.item.repo ? this.props.item.created : undefined
+    };
+  }
+
+  // Using this because it gets the live value ('installed' is stuck after a re-render)
+  isInstalled() {
+    return marketplaceStorage.getItem(this.localStorageKey) !== null;
+  }
+
+  async componentDidMount() {
+    if (this.props.item.repo === "local-config") return;
+
+    // Refresh stars if on "Installed" tab with stars enabled
+    if (this.props.CONFIG.activeTab === "Installed" && this.props.type !== "snippet") {
+      // https://docs.github.com/en/rest/reference/repos#get-a-repository
+      const url = `https://api.github.com/repos/${this.props.item.user}/${this.props.item.repo}`;
+      // TODO: This implementation could probably be improved.
+      // It might have issues when quickly switching between tabs.
+      const repoData = await fetch(url).then((res) => res.json());
+      const { stargazers_count, pushed_at } = repoData;
+
+      const stateUpdate = { stars: 0, lastUpdated: undefined };
+      if (this.state.stars !== stargazers_count && this.props.CONFIG.visual.stars) {
+        stateUpdate.stars = stargazers_count;
+        console.debug(`Stars updated to: ${stargazers_count}`);
+      }
+      if (this.state.lastUpdated !== pushed_at) {
+        stateUpdate.lastUpdated = pushed_at;
+        console.debug(`New update pushed at: ${pushed_at}`);
+        switch (this.props.type) {
+          case "extension":
+            this.installExtension();
+            break;
+          case "theme":
+            this.installTheme(true);
+            break;
+        }
+      }
+    }
+  }
+
+  async buttonClicked() {
+    if (this.props.type === "extension") {
+      if (this.isInstalled()) {
+        console.debug("Extension already installed, removing");
+        this.removeExtension();
+      } else {
+        this.installExtension();
+      }
+      openModal("RELOAD");
+    } else if (this.props.type === "theme") {
+      if (this.isInstalled()) {
+        console.debug("Theme already installed, removing");
+        this.removeTheme(this.localStorageKey);
+      } else {
+        const localTheme = marketplaceStorage.getItem(LOCALSTORAGE_KEYS.localTheme);
+        if (localTheme && localTheme.toLowerCase() !== "marketplace") {
+          Navify.showNotification(t("notifications.wrongLocalTheme"), true, 5000);
+          return;
+        }
+
+        // Remove theme if already installed, then install the new theme
+        this.removeTheme();
+        await this.installTheme();
+      }
+
+      if (this.props.item.manifest?.include) openModal("RELOAD");
+    } else if (this.props.type === "app") {
+      // Open repo in new tab
+      window.open(this.state.externalUrl, "_blank");
+    } else if (this.props.type === "snippet") {
+      if (this.isInstalled()) {
+        console.debug("Snippet already installed, removing");
+        this.removeSnippet();
+      } else {
+        this.installSnippet();
+      }
+    } else {
+      console.error("Unknown card type");
+    }
+  }
+
+  installExtension() {
+    console.debug(`Installing extension ${this.localStorageKey}`);
+    // Add to localstorage (this stores a copy of all the card props in the localstorage)
+    // TODO: can I clean this up so it's less repetition?
+    if (!this.props.item) {
+      Navify.showNotification(t("notifications.extensionInstallationError"), true);
+      return;
+    }
+    const { manifest, title, subtitle, authors, user, repo, branch, imageURL, extensionURL, readmeURL, lastUpdated, created } = this.props.item;
+    marketplaceStorage.setItem(
+      this.localStorageKey,
+      JSON.stringify({
+        manifest,
+        type: this.props.type,
+        title,
+        subtitle,
+        authors,
+        user,
+        repo,
+        branch,
+        imageURL,
+        extensionURL,
+        readmeURL,
+        stars: this.state.stars,
+        lastUpdated,
+        created
+      })
+    );
+
+    // Add to installed list if not there already
+    const installedExtensions = getLocalStorageDataFromKey(LOCALSTORAGE_KEYS.installedExtensions, []);
+    if (installedExtensions.indexOf(this.localStorageKey) === -1) {
+      installedExtensions.push(this.localStorageKey);
+      marketplaceStorage.setItem(LOCALSTORAGE_KEYS.installedExtensions, JSON.stringify(installedExtensions));
+    }
+
+    console.debug("Installed");
+    this.setState({ installed: true });
+  }
+
+  removeExtension() {
+    const extValue = marketplaceStorage.getItem(this.localStorageKey);
+    if (extValue) {
+      console.debug(`Removing extension ${this.localStorageKey}`);
+      // Remove from localstorage
+      marketplaceStorage.removeItem(this.localStorageKey);
+
+      // Remove from installed list
+      const installedExtensions = getLocalStorageDataFromKey(LOCALSTORAGE_KEYS.installedExtensions, []);
+      const remainingInstalledExtensions = installedExtensions.filter((key) => key !== this.localStorageKey);
+      marketplaceStorage.setItem(LOCALSTORAGE_KEYS.installedExtensions, JSON.stringify(remainingInstalledExtensions));
+
+      console.debug("Removed");
+      this.setState({ installed: false });
+    }
+  }
+
+  async installTheme(update = false) {
+    const { item } = this.props;
+    if (!item) {
+      Navify.showNotification(t("notifications.themeInstallationError"), true);
+      return;
+    }
+    console.debug(`Installing theme ${this.localStorageKey}`);
+
+    let parsedSchemes: SchemeIni = {};
+    let currentScheme: string | null = null;
+
+    if (update) {
+      // Preserve color schemes from localstorage
+      const { schemes, activeScheme } = getLocalStorageDataFromKey(this.localStorageKey, {});
+      parsedSchemes = schemes;
+      currentScheme = activeScheme;
+    } else if (item.schemesURL) {
+      const schemesResponse = await fetch(item.schemesURL);
+      if (!schemesResponse.ok) {
+        Navify.showNotification(t("notifications.themeInstallationError"), true);
+        return;
+      }
+      const colourSchemes = await schemesResponse.text();
+      parsedSchemes = parseIni(colourSchemes);
+    }
+
+    const activeScheme = currentScheme || Object.keys(parsedSchemes)[0] || null;
+    console.debug(parsedSchemes, activeScheme);
+
+    // Add to localstorage (this stores a copy of all the card props in the localstorage)
+    // TODO: refactor/clean this up
+
+    const {
+      manifest,
+      title,
+      subtitle,
+      authors,
+      user,
+      repo,
+      branch,
+      imageURL,
+      extensionURL,
+      readmeURL,
+      cssURL,
+      schemesURL,
+      include,
+      lastUpdated,
+      created
+    } = item;
+
+    marketplaceStorage.setItem(
+      this.localStorageKey,
+      JSON.stringify({
+        manifest,
+        type: this.props.type,
+        title,
+        subtitle,
+        authors,
+        user,
+        repo,
+        branch,
+        imageURL,
+        extensionURL,
+        readmeURL,
+        stars: this.state.stars,
+        tags: this.tags,
+        // Theme stuff
+        cssURL,
+        schemesURL,
+        include,
+        // Installed theme localstorage item has schemes, nothing else does
+        schemes: parsedSchemes,
+        activeScheme,
+        lastUpdated,
+        created
+      })
+    );
+
+    // TODO: handle this differently?
+
+    // Add to installed list if not there already
+    const installedThemes = getLocalStorageDataFromKey(LOCALSTORAGE_KEYS.installedThemes, []);
+    if (installedThemes.indexOf(this.localStorageKey) === -1) {
+      installedThemes.push(this.localStorageKey);
+      marketplaceStorage.setItem(LOCALSTORAGE_KEYS.installedThemes, JSON.stringify(installedThemes));
+    }
+    marketplaceStorage.setItem(LOCALSTORAGE_KEYS.themeInstalled, this.localStorageKey);
+
+    console.debug("Installed");
+
+    // TODO: We'll also need to actually update the usercss etc, not just the colour scheme
+    // e.g. the stuff from extension.js, like injectUserCSS() etc.
+
+    const installedCSS = await this.fetchAndInjectUserCSS(this.localStorageKey);
+    if (!installedCSS) {
+      marketplaceStorage.removeItem(this.localStorageKey);
+      marketplaceStorage.removeItem(LOCALSTORAGE_KEYS.themeInstalled);
+      const remainingThemes = installedThemes.filter((key) => key !== this.localStorageKey);
+      marketplaceStorage.setItem(LOCALSTORAGE_KEYS.installedThemes, JSON.stringify(remainingThemes));
+      this.setState({ installed: false });
+      return;
+    }
+    this.props.updateActiveTheme(this.localStorageKey);
+    this.props.updateColourSchemes(parsedSchemes, activeScheme as string);
+
+    const name = this.props.item.manifest?.name;
+    const mutableConfig = Navify.Config as unknown as { current_theme: string; color_scheme: string };
+    if (name) mutableConfig.current_theme = name;
+    if (activeScheme) mutableConfig.color_scheme = activeScheme;
+
+    this.setState({ installed: true });
+  }
+
+  removeTheme(defaultThemeKey?: string | null) {
+    // If don't specify theme, remove the currently installed theme
+    const themeKey = defaultThemeKey || marketplaceStorage.getItem(LOCALSTORAGE_KEYS.themeInstalled);
+
+    const themeValue = themeKey && marketplaceStorage.getItem(themeKey);
+
+    if (themeKey && themeValue) {
+      console.debug(`Removing theme ${themeKey}`);
+
+      // Remove from localstorage
+      marketplaceStorage.removeItem(themeKey);
+
+      // Remove record of installed theme
+      marketplaceStorage.removeItem(LOCALSTORAGE_KEYS.themeInstalled);
+
+      // Remove from installed list
+      const installedThemes = getLocalStorageDataFromKey(LOCALSTORAGE_KEYS.installedThemes, []);
+      const remainingInstalledThemes = installedThemes.filter((key) => key !== themeKey);
+      marketplaceStorage.setItem(LOCALSTORAGE_KEYS.installedThemes, JSON.stringify(remainingInstalledThemes));
+
+      console.debug("Removed");
+
+      // Removes the current theme CSS
+      this.fetchAndInjectUserCSS(null);
+      // Update the active theme in Grid state
+      this.props.updateActiveTheme(null);
+      // Removes the current colour scheme
+      this.props.updateColourSchemes(null, null);
+
+      // Restore Navify.Config
+      // @ts-expect-error: Cannot assign to 'current_theme' because it is a read-only property
+      Navify.Config.current_theme = "";
+      // @ts-expect-error: Cannot assign to 'color_scheme' because it is a read-only property
+      Navify.Config.color_scheme = "";
+
+      this.setState({ installed: false });
+    }
+  }
+
+  installSnippet() {
+    console.debug(`Installing snippet ${this.localStorageKey}`);
+    marketplaceStorage.setItem(
+      this.localStorageKey,
+      JSON.stringify({
+        code: this.props.item.code,
+        title: this.props.item.title,
+        description: this.props.item.description,
+        imageURL: this.props.item.imageURL
+      })
+    );
+
+    // Add to installed list if not there already
+    const installedSnippetKeys = getLocalStorageDataFromKey(LOCALSTORAGE_KEYS.installedSnippets, []);
+    if (installedSnippetKeys.indexOf(this.localStorageKey) === -1) {
+      installedSnippetKeys.push(this.localStorageKey);
+      marketplaceStorage.setItem(LOCALSTORAGE_KEYS.installedSnippets, JSON.stringify(installedSnippetKeys));
+    }
+    const installedSnippets = installedSnippetKeys.map((key) => getLocalStorageDataFromKey(key));
+    initializeSnippets(installedSnippets);
+
+    this.setState({ installed: true });
+  }
+
+  removeSnippet() {
+    marketplaceStorage.removeItem(this.localStorageKey);
+
+    // Remove from installed list
+    const installedSnippetKeys = getLocalStorageDataFromKey(LOCALSTORAGE_KEYS.installedSnippets, []);
+    const remainingInstalledSnippetKeys = installedSnippetKeys.filter((key) => key !== this.localStorageKey);
+    marketplaceStorage.setItem(LOCALSTORAGE_KEYS.installedSnippets, JSON.stringify(remainingInstalledSnippetKeys));
+    const remainingInstalledSnippets = remainingInstalledSnippetKeys.map((key) => getLocalStorageDataFromKey(key));
+    initializeSnippets(remainingInstalledSnippets);
+
+    this.setState({ installed: false });
+  }
+
+  /**
+   * Update the user.css in the DOM
+   * @param {string | null} theme The theme localStorageKey or null, if we want to reset the theme
+   */
+  async fetchAndInjectUserCSS(theme) {
+    try {
+      const tld = window.sessionStorage.getItem("marketplace-request-tld") || undefined;
+      const userCSS = theme ? await parseCSS(this.props.item as CardItem, tld) : undefined;
+      if (!injectUserCSS(userCSS)) throw new Error("Theme CSS was not attached");
+      return true;
+    } catch (error) {
+      console.warn(error);
+      Navify.showNotification(t("notifications.themeInstallationError"), true);
+      return false;
+    }
+  }
+
+  openReadme() {
+    if (this.props.item?.manifest?.readme) {
+      Navify.Platform.History.push({
+        pathname: `${CUSTOM_APP_PATH}/readme`,
+        state: {
+          data: {
+            title: this.props.item.title,
+            user: this.props.item.user,
+            repo: this.props.item.repo,
+            branch: this.props.item.branch,
+            readmeURL: this.props.item.readmeURL,
+            type: this.props.type,
+            install: this.buttonClicked.bind(this),
+            isInstalled: this.isInstalled.bind(this)
+          }
+        }
+      });
+    } else {
+      Navify.showNotification(t("notifications.noReadmeFile"), true);
+    }
+  }
+
+  render() {
+    // Cache this for performance
+    const IS_INSTALLED = this.isInstalled();
+    // console.log(`Rendering ${this.localStorageKey} - is ${IS_INSTALLED ? "" : "not"} installed`);
+
+    // Kill the card if it has been uninstalled on the "Installed" tab
+    if (this.props.CONFIG.activeTab === "Installed" && !IS_INSTALLED) {
+      console.debug("Card item not installed");
+      return null;
+    }
+
+    const cardClasses = ["main-card-card", `marketplace-card--${this.props.type}`];
+    if (IS_INSTALLED) cardClasses.push("marketplace-card--installed");
+
+    const detail: string[] = [];
+    // this.visual.type && detail.push(this.type);
+    if (this.props.type !== "snippet" && this.props.visual.stars) {
+      detail.push(`★ ${this.state.stars}`);
+    }
+
+    return (
+      // biome-ignore lint/a11y/noStaticElementInteractions: Not static
+      <div
+        className={cardClasses.join(" ")}
+        onClick={() => {
+          if (this.props.type === "snippet") {
+            const processedName = this.props.item.title.replace(/\n/g, "");
+
+            if (getLocalStorageDataFromKey(`marketplace:installed:snippet:${processedName}`)?.custom)
+              return openModal("EDIT_SNIPPET", undefined, undefined, this.props);
+
+            openModal("VIEW_SNIPPET", undefined, undefined, this.props, this.buttonClicked.bind(this));
+          } else this.openReadme();
+        }}
+      >
+        <div className="main-card-draggable" draggable="true">
+          <div className="main-card-imageContainer">
+            <div className="main-cardImage-imageWrapper">
+              <div>
+                <img
+                  alt=""
+                  aria-hidden="false"
+                  draggable="false"
+                  loading="lazy"
+                  src={this.props.item.imageURL}
+                  className="main-image-image main-cardImage-image"
+                  onError={(e) => {
+                    e.currentTarget.setAttribute(
+                      "src",
+                      "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 180'%3E%3Crect width='320' height='180' fill='%23141722'/%3E%3Ctext x='160' y='96' text-anchor='middle' fill='%239aa0b5' font-family='Arial,sans-serif' font-size='22'%3ENo image%3C/text%3E%3C/svg%3E"
+                    );
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+          <div className="main-card-cardMetadata">
+            <a
+              draggable="false"
+              title={brandText(this.props.type === "snippet" ? this.props.item.title : this.props.item.manifest?.name)}
+              className="main-cardHeader-link"
+              dir="auto"
+              href={this.props.type !== "snippet" ? this.state.externalUrl || undefined : SNIPPETS_PAGE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (this.props.type !== "snippet" && !this.state.externalUrl) e.preventDefault();
+              }}
+            >
+              <div className="main-cardHeader-text main-type-balladBold">{brandText(this.props.item.title)}</div>
+            </a>
+            <div className="main-cardSubHeader-root main-type-mestoBold marketplace-cardSubHeader">
+              {/* Add authors if they exist */}
+              {this.props.item.authors && <AuthorsDiv authors={this.props.item.authors} />}
+              <span>{detail.join(" ‒ ")}</span>
+            </div>
+            <p className="marketplace-card-desc">
+              {brandText(this.props.type === "snippet" ? this.props.item.description : this.props.item.manifest?.description)}
+            </p>
+            {this.props.item.lastUpdated && (
+              <p className="marketplace-card-desc">
+                {t("grid.lastUpdated", {
+                  val: new Date(this.props.item.lastUpdated),
+                  formatParams: {
+                    val: { year: "numeric", month: "long", day: "numeric" }
+                  }
+                })}
+              </p>
+            )}
+            {this.tags.length ? (
+              <div className="marketplace-card__bottom-meta main-type-mestoBold">
+                <TagsDiv tags={this.tags} showTags={this.props.CONFIG.visual.tags} />
+              </div>
+            ) : null}
+            {IS_INSTALLED && <div className="marketplace-card__bottom-meta main-type-mestoBold">✓ {t("grid.installed")}</div>}
+            <Tooltip label={this.props.type === "app" ? t("github") : IS_INSTALLED ? t("remove") : t("install")} renderInline={true}>
+              <div className="main-card-PlayButtonContainer">
+                <Button
+                  classes={["marketplace-installButton"]}
+                  type="circle"
+                  // If it is installed, it will remove it when button is clicked, if not it will save
+                  // TODO: Refactor this using lookups or sth similar
+                  label={this.props.type === "app" ? t("github") : IS_INSTALLED ? t("remove") : t("install")}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    this.buttonClicked();
+                  }}
+                >
+                  {/*If the extension, theme, or snippet is already installed, it will display trash, otherwise it displays download*/}
+                  {/* TODO: Refactor this using lookups or sth similar */}
+                  {this.props.type === "app" ? <GitHubIcon /> : IS_INSTALLED ? <TrashIcon /> : <DownloadIcon />}
+                </Button>
+              </div>
+            </Tooltip>
+          </div>
+        </div>
+      </div>
+    );
+  }
+}
+
+export default withTranslation()(Card);
