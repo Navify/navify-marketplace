@@ -346,42 +346,29 @@ export class Card extends React.Component<
   }
 
   removeTheme(defaultThemeKey?: string | null) {
-    // If don't specify theme, remove the currently installed theme
     const themeKey = defaultThemeKey || marketplaceStorage.getItem(LOCALSTORAGE_KEYS.themeInstalled);
+    const activeThemeKey = marketplaceStorage.getItem(LOCALSTORAGE_KEYS.themeInstalled);
+    const installedThemes = getLocalStorageDataFromKey(LOCALSTORAGE_KEYS.installedThemes, []);
 
-    const themeValue = themeKey && marketplaceStorage.getItem(themeKey);
-
-    if (themeKey && themeValue) {
+    if (themeKey) {
       console.debug(`Removing theme ${themeKey}`);
-
-      // Remove from localstorage
       marketplaceStorage.removeItem(themeKey);
-
-      // Remove record of installed theme
-      marketplaceStorage.removeItem(LOCALSTORAGE_KEYS.themeInstalled);
-
-      // Remove from installed list
-      const installedThemes = getLocalStorageDataFromKey(LOCALSTORAGE_KEYS.installedThemes, []);
       const remainingInstalledThemes = installedThemes.filter((key) => key !== themeKey);
       marketplaceStorage.setItem(LOCALSTORAGE_KEYS.installedThemes, JSON.stringify(remainingInstalledThemes));
-
-      console.debug("Removed");
-
-      // Removes the current theme CSS
-      this.fetchAndInjectUserCSS(null);
-      // Update the active theme in Grid state
-      this.props.updateActiveTheme(null);
-      // Removes the current colour scheme
-      this.props.updateColourSchemes(null, null);
-
-      // Restore Navify.Config
-      // @ts-expect-error: Cannot assign to 'current_theme' because it is a read-only property
-      Navify.Config.current_theme = "";
-      // @ts-expect-error: Cannot assign to 'color_scheme' because it is a read-only property
-      Navify.Config.color_scheme = "";
-
-      this.setState({ installed: false });
     }
+
+    if (!themeKey || activeThemeKey === themeKey) {
+      marketplaceStorage.removeItem(LOCALSTORAGE_KEYS.themeInstalled);
+      this.fetchAndInjectUserCSS(null);
+      this.props.updateActiveTheme(null);
+      this.props.updateColourSchemes(null, null);
+      const mutableConfig = Navify.Config as unknown as { current_theme: string; color_scheme: string };
+      mutableConfig.current_theme = "";
+      mutableConfig.color_scheme = "";
+    }
+
+    console.debug("Removed");
+    this.setState({ installed: false });
   }
 
   installSnippet() {

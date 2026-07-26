@@ -111,9 +111,11 @@ const createConfiguredItem = (name: string, type: "extension" | "theme" | "app")
 
 export const getConfiguredCatalog = () => {
   const items: Array<{ item: CardItem; type: "extension" | "theme" | "app" }> = [];
+  const currentTheme = (Navify.Config.current_theme || "").trim();
+  const internalThemes = new Set(["marketplace", "navify", "navifydefault", "default", "spotify", "none"]);
 
-  if (Navify.Config.current_theme) {
-    items.push({ item: createConfiguredItem(Navify.Config.current_theme, "theme"), type: "theme" });
+  if (currentTheme && !internalThemes.has(currentTheme.toLowerCase())) {
+    items.push({ item: createConfiguredItem(currentTheme, "theme"), type: "theme" });
   }
 
   for (const name of (Navify.Config.extensions || []).filter(

@@ -244,22 +244,32 @@ class Grid extends React.Component<
           extension: getLocalStorageDataFromKey(LOCALSTORAGE_KEYS.installedExtensions, []),
           snippet: getLocalStorageDataFromKey(LOCALSTORAGE_KEYS.installedSnippets, [])
         };
+        const installedListKeys = {
+          theme: LOCALSTORAGE_KEYS.installedThemes,
+          extension: LOCALSTORAGE_KEYS.installedExtensions,
+          snippet: LOCALSTORAGE_KEYS.installedSnippets
+        };
 
-        for (const type in installedStuff) {
+        for (const type of Object.keys(installedStuff) as Array<keyof typeof installedStuff>) {
           if (installedStuff[type].length) {
             const installedOfType: CardItem[] = [];
+            const validItemKeys: string[] = [];
             for (const itemKey of installedStuff[type]) {
-              // TODO: err handling
               const installedItem = getLocalStorageDataFromKey(itemKey);
-              // I believe this stops the requests when switching tabs?
               if (this.requestQueue.length > 1 && queue !== this.requestQueue[0]) {
-                // Stop this queue from continuing to fetch and append to cards list
                 return -1;
               }
 
+              if (!installedItem) {
+                marketplaceStorage.removeItem(itemKey);
+                continue;
+              }
+
               renderedKeys.add(itemKey);
+              validItemKeys.push(itemKey);
               installedOfType.push(installedItem);
             }
+            marketplaceStorage.setItem(installedListKeys[type], JSON.stringify(validItemKeys));
 
             sortCardItems(installedOfType, marketplaceStorage.getItem("marketplace:sort") || "stars");
 
