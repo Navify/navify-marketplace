@@ -7,7 +7,6 @@ import { t } from "i18next";
 import { LOCALSTORAGE_KEYS, MARKETPLACE_VERSION } from "../constants";
 import { hydrateMarketplaceStorage, marketplaceStorage } from "../logic/Storage";
 import {
-  addExtensionToNavifyConfig,
   exportMarketplace,
   getAvailableTLD,
   getLocalStorageDataFromKey,
@@ -49,31 +48,57 @@ import {
 
   const tld = (await getAvailableTLD()) || "net";
 
-  const initializeExtension = (extensionKey: string) => {
+  const removeRemoteExtensionFromConfig = (url?: string) => {
+    if (!url) return;
+    const name = url.split("?")[0].split("/").pop();
+    if (!name) return;
+    const index = Navify.Config.extensions.indexOf(name);
+    if (index !== -1) Navify.Config.extensions.splice(index, 1);
+  };
+
+  const loadRemoteScript = async (url: string, className?: string) => {
+    const sources = [url];
+    if (isGithubRawUrl(url)) {
+      const { user, repo, branch, filePath } = getParamsFromGithubRaw(url);
+      if (user && repo && branch && filePath) {
+        sources.unshift(`https://cdn.jsdelivr.${tld}/gh/${user}/${repo}@${branch}/${filePath}`);
+      }
+    }
+
+    for (const source of [...new Set(sources)]) {
+      const script = document.createElement("script");
+      script.defer = true;
+      if (source.split("?")[0].endsWith(".mjs")) script.type = "module";
+      script.src = `${source}${source.includes("?") ? "&" : "?"}time=${Date.now()}`;
+      if (className) script.classList.add(className);
+
+      try {
+        await new Promise<void>((resolve, reject) => {
+          script.addEventListener("load", () => resolve(), { once: true });
+          script.addEventListener("error", () => reject(new Error(`Unable to load ${source}`)), { once: true });
+          document.body.appendChild(script);
+        });
+        return;
+      } catch {
+        script.remove();
+      }
+    }
+
+    throw new Error(`Unable to load external script ${url}`);
+  };
+
+  const initializeExtension = async (extensionKey: string) => {
     const extensionManifest = getLocalStorageDataFromKey(extensionKey);
-    // Abort if no manifest found or no extension URL (i.e. a theme)
     if (!extensionManifest?.extensionURL) return;
 
     console.debug("Initializing extension: ", extensionManifest);
-
-    const script = document.createElement("script");
-    script.defer = true;
-    script.src = extensionManifest.extensionURL;
-
-    // If it's a github raw script, use jsdelivr
-    if (isGithubRawUrl(script.src)) {
-      const { user, repo, branch, filePath } = getParamsFromGithubRaw(extensionManifest.extensionURL);
-      if (!user || !repo || !branch || !filePath) return;
-      script.src = `https://cdn.jsdelivr.${tld}/gh/${user}/${repo}@${branch}/${filePath}`;
-      if (filePath.endsWith(".mjs")) script.type = "module";
+    removeRemoteExtensionFromConfig(extensionManifest.extensionURL);
+    try {
+      await loadRemoteScript(extensionManifest.extensionURL);
+    } catch (error) {
+      console.error(error);
+      Navify.showNotification(`Unable to load ${extensionManifest.title || "external extension"}`, true, 5000);
     }
-
-    script.src = `${script.src}?time=${Date.now()}`;
-
-    document.body.appendChild(script);
-
-    // Add to Navify.Config
-    addExtensionToNavifyConfig(extensionManifest.manifest?.main);
   };
 
   const initializeTheme = async (themeKey: string) => {
@@ -123,28 +148,15 @@ import {
     // @ts-expect-error: `current_theme` is read-only type in types
     Navify.Config.current_theme = themeManifest.manifest?.name;
 
-    // Inject any included js
     if (themeManifest.include?.length) {
-      // console.log("Including js", installedThemeData.include);
-
       for (const script of themeManifest.include) {
-        const newScript = document.createElement("script");
-        let src = script;
-
-        // If it's a github raw script, use jsdelivr
-        if (isGithubRawUrl(script)) {
-          const { user, repo, branch, filePath } = getParamsFromGithubRaw(script);
-          if (!user || !repo || !branch || !filePath) return;
-          src = `https://cdn.jsdelivr.${tld}/gh/${user}/${repo}@${branch}/${filePath}`;
-          if (filePath.endsWith(".mjs")) newScript.type = "module";
+        removeRemoteExtensionFromConfig(script);
+        try {
+          await loadRemoteScript(script, "marketplaceScript");
+        } catch (error) {
+          console.error(error);
+          Navify.showNotification(`Unable to load an external script for ${themeManifest.title}`, true, 5000);
         }
-        // console.log({src});
-        newScript.src = `${src}?time=${Date.now()}`;
-        newScript.classList.add("marketplaceScript");
-        document.body.appendChild(newScript);
-
-        // Add to Navify.Config
-        addExtensionToNavifyConfig(script);
       }
     }
   };
@@ -159,7 +171,7 @@ import {
 
   const installedExtensions = getLocalStorageDataFromKey(LOCALSTORAGE_KEYS.installedExtensions, []);
   for (const extensionKey of installedExtensions) {
-    initializeExtension(extensionKey);
+    await initializeExtension(extensionKey);
   }
 
   const { current_theme: localTheme } = Navify.Config;
