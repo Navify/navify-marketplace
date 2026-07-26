@@ -239,6 +239,7 @@ class Grid extends React.Component<
       }
       case "Installed": {
         const renderedKeys = new Set<string>();
+        const renderedNames = new Set<string>();
         const installedStuff = {
           theme: getLocalStorageDataFromKey(LOCALSTORAGE_KEYS.installedThemes, []),
           extension: getLocalStorageDataFromKey(LOCALSTORAGE_KEYS.installedExtensions, []),
@@ -274,6 +275,7 @@ class Grid extends React.Component<
               }
 
               renderedKeys.add(itemKey);
+              renderedNames.add((installedItem.manifest?.name || installedItem.title || "").trim().toLowerCase());
               validItemKeys.push(itemKey);
               installedOfType.push(installedItem);
             }
@@ -292,9 +294,11 @@ class Grid extends React.Component<
             item: configured.item,
             type: configured.type
           } as React.ComponentProps<typeof Card>);
-          if (renderedKeys.has(itemKey)) continue;
+          const itemName = (configured.item.manifest?.name || configured.item.title || "").trim().toLowerCase();
+          if (renderedKeys.has(itemKey) || renderedNames.has(itemName)) continue;
           marketplaceStorage.setItem(itemKey, JSON.stringify(configured.item));
           renderedKeys.add(itemKey);
+          renderedNames.add(itemName);
           this.appendCard(configured.item, configured.type, activeTab);
         }
 
