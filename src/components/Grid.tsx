@@ -8,7 +8,7 @@ const Navify = window.Navify;
 import { ITEMS_PER_REQUEST, LATEST_RELEASE_URL, LOCALSTORAGE_KEYS, MARKETPLACE_VERSION } from "../constants";
 import { fetchAppManifest, fetchCssSnippets, fetchExtensionManifest, fetchThemeManifest, getBlacklist, getTaggedRepos } from "../logic/FetchRemotes";
 import { openModal } from "../logic/LaunchModals";
-import { getConfiguredCatalog, getLocalCatalog } from "../logic/LocalCatalog";
+import { getConfiguredCatalog, getLocalCatalog, isInternalThemeName } from "../logic/LocalCatalog";
 import { marketplaceStorage } from "../logic/Storage";
 import {
   generateKey,
@@ -262,6 +262,14 @@ class Grid extends React.Component<
 
               if (!installedItem) {
                 marketplaceStorage.removeItem(itemKey);
+                continue;
+              }
+
+              if (type === "theme" && isInternalThemeName(installedItem.manifest?.name || installedItem.title)) {
+                marketplaceStorage.removeItem(itemKey);
+                if (marketplaceStorage.getItem(LOCALSTORAGE_KEYS.themeInstalled) === itemKey) {
+                  marketplaceStorage.removeItem(LOCALSTORAGE_KEYS.themeInstalled);
+                }
                 continue;
               }
 

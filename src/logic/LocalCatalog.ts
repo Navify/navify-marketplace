@@ -3,6 +3,9 @@ import type { CardItem } from "../types/marketplace-types";
 const base = `${location.origin}/assets/marketplace/builtins`;
 const noImage =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 180'%3E%3Crect width='320' height='180' fill='%23141722'/%3E%3Ctext x='160' y='96' text-anchor='middle' fill='%239aa0b5' font-family='Arial,sans-serif' font-size='22'%3ENo image%3C/text%3E%3C/svg%3E";
+const internalThemes = new Set(["marketplace", "navify", "navifydefault", "default", "spotify", "none"]);
+
+export const isInternalThemeName = (name?: string | null) => internalThemes.has((name || "").trim().toLowerCase());
 
 const shared = {
   user: "Navify",
@@ -112,9 +115,8 @@ const createConfiguredItem = (name: string, type: "extension" | "theme" | "app")
 export const getConfiguredCatalog = () => {
   const items: Array<{ item: CardItem; type: "extension" | "theme" | "app" }> = [];
   const currentTheme = (Navify.Config.current_theme || "").trim();
-  const internalThemes = new Set(["marketplace", "navify", "navifydefault", "default", "spotify", "none"]);
 
-  if (currentTheme && !internalThemes.has(currentTheme.toLowerCase())) {
+  if (currentTheme && !isInternalThemeName(currentTheme)) {
     items.push({ item: createConfiguredItem(currentTheme, "theme"), type: "theme" });
   }
 
