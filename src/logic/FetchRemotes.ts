@@ -32,28 +32,36 @@ export async function getTaggedRepos(tag: RepoTopic, page = 1, BLACKLIST: string
     return result;
   };
 
-  let allRepos = await requestTopic(tag);
-  if (!allRepos?.items?.length) {
-    const compatibilityName = [115, 112, 105, 99, 101, 116, 105, 102, 121].map((value) => String.fromCharCode(value)).join("");
-    allRepos = await requestTopic(tag.replace("navify", compatibilityName));
-  }
+  const compatibilityName = [115, 112, 105, 99, 101, 116, 105, 102, 121].map((value) => String.fromCharCode(value)).join("");
+  const topics = [tag, tag.replace("navify", compatibilityName)];
+  const results = await Promise.all(topics.map(requestTopic));
+  const availableResults = results.filter((result) => Array.isArray(result?.items));
 
-  if (!allRepos?.items) {
+  if (!availableResults.length) {
     Navify.showNotification(t("notifications.tooManyRequests"), true, 5000);
-    return { items: [], page_count: 0, total_count: 0 };
+    return { items: [], page_count: 0, processed_count: 0, total_count: 0, has_more: false };
   }
 
-  const filteredResults = {
-    ...allRepos,
-    // Include count of all items on the page, since we're filtering the blacklist below,
-    // which can mess up the paging logic
-    page_count: allRepos.items.length,
-    items: allRepos.items.filter((item) => !isBlacklisted(item.html_url, BLACKLIST) && (showArchived || !item.archived))
+  const uniqueRepos = new Map<string, (typeof availableResults)[number]["items"][number]>();
+  for (const result of availableResults) {
+    for (const item of result.items) uniqueRepos.set(item.full_name || item.html_url, item);
+  }
+
+  const currentPage = Math.max(page, 1);
+  const processedCount = availableResults.reduce(
+    (count, result) => count + Math.min(result.total_count, ITEMS_PER_REQUEST * (currentPage - 1) + result.items.length),
+    0
+  );
+  const totalCount = availableResults.reduce((count, result) => count + result.total_count, 0);
+
+  return {
+    items: [...uniqueRepos.values()].filter((item) => !isBlacklisted(item.html_url, BLACKLIST) && (showArchived || !item.archived)),
+    page_count: uniqueRepos.size,
+    processed_count: processedCount,
+    total_count: totalCount,
+    has_more: availableResults.some((result) => ITEMS_PER_REQUEST * (currentPage - 1) + result.items.length < result.total_count)
   };
-
-  return filteredResults;
 }
-
 // Workaround for not spamming console with 404s
 const script = `
   self.addEventListener('message', async (event) => {
@@ -147,9 +155,11 @@ export async function fetchExtensionManifest(contents_url: string, branch: strin
           extensionURL: manifest.main.startsWith("http")
             ? manifest.main
             : `https://raw.githubusercontent.com/${user}/${repo}/${selectedBranch}/${manifest.main}`,
-          readmeURL: manifest.readme?.startsWith("http")
-            ? manifest.readme
-            : `https://raw.githubusercontent.com/${user}/${repo}/${selectedBranch}/${manifest.readme}`,
+          readmeURL: manifest.readme
+            ? manifest.readme.startsWith("http")
+              ? manifest.readme
+              : `https://raw.githubusercontent.com/${user}/${repo}/${selectedBranch}/${manifest.readme}`
+            : "",
           stars,
           tags: manifest.tags
         };
@@ -206,9 +216,11 @@ export async function fetchThemeManifest(contents_url: string, branch: string, s
           imageURL: manifest.preview?.startsWith("http")
             ? manifest.preview
             : `https://raw.githubusercontent.com/${user}/${repo}/${selectedBranch}/${manifest.preview}`,
-          readmeURL: manifest.readme?.startsWith("http")
-            ? manifest.readme
-            : `https://raw.githubusercontent.com/${user}/${repo}/${selectedBranch}/${manifest.readme}`,
+          readmeURL: manifest.readme
+            ? manifest.readme.startsWith("http")
+              ? manifest.readme
+              : `https://raw.githubusercontent.com/${user}/${repo}/${selectedBranch}/${manifest.readme}`
+            : "",
           stars,
           tags: manifest.tags,
           // theme stuff
@@ -275,9 +287,11 @@ export async function fetchAppManifest(contents_url: string, branch: string, sta
           // extensionURL: manifest.main.startsWith("http")
           //   ? manifest.main
           //   : `https://raw.githubusercontent.com/${user}/${repo}/${selectedBranch}/${manifest.main}`,
-          readmeURL: manifest.readme?.startsWith("http")
-            ? manifest.readme
-            : `https://raw.githubusercontent.com/${user}/${repo}/${selectedBranch}/${manifest.readme}`,
+          readmeURL: manifest.readme
+            ? manifest.readme.startsWith("http")
+              ? manifest.readme
+              : `https://raw.githubusercontent.com/${user}/${repo}/${selectedBranch}/${manifest.readme}`
+            : "",
           stars,
           tags: manifest.tags
         };

@@ -16,7 +16,7 @@ const shared = {
   tags: ["navify", "local"],
   lastUpdated: new Date().toISOString(),
   created: new Date().toISOString(),
-  authors: [{ name: "Navify", url: "" }]
+  authors: [{ name: "HitBoyXx23", url: "https://github.com/HitBoyXx23" }]
 };
 
 const extension = {

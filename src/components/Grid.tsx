@@ -228,12 +228,11 @@ class Grid extends React.Component<
         // First result is null or -1 so it coerces to 1
         const currentPage = this.requestPage > -1 && this.requestPage ? this.requestPage : 1;
         // Sets the amount of items that have thus been fetched
-        const soFarResults = ITEMS_PER_REQUEST * (currentPage - 1) + pageOfRepos.page_count;
-        const remainingResults = pageOfRepos.total_count - soFarResults;
+        const soFarResults = pageOfRepos.processed_count;
 
         // If still have more results, return next page number to fetch
         console.debug(`Parsed ${soFarResults}/${pageOfRepos.total_count} extensions`);
-        if (remainingResults > 0) return currentPage + 1;
+        if (pageOfRepos.has_more) return currentPage + 1;
         console.debug("No more extension results");
         break;
       }
@@ -344,11 +343,10 @@ class Grid extends React.Component<
         // First request is null, so coerces to 1
         const currentPage = this.requestPage > -1 && this.requestPage ? this.requestPage : 1;
         // -1 because the page number is 1-indexed
-        const soFarResults = ITEMS_PER_REQUEST * (currentPage - 1) + pageOfRepos.page_count;
-        const remainingResults = pageOfRepos.total_count - soFarResults;
+        const soFarResults = pageOfRepos.processed_count;
 
         console.debug(`Parsed ${soFarResults}/${pageOfRepos.total_count} themes`);
-        if (remainingResults > 0) return currentPage + 1;
+        if (pageOfRepos.has_more) return currentPage + 1;
         console.debug("No more theme results");
         break;
       }
@@ -383,11 +381,10 @@ class Grid extends React.Component<
         // First request is null, so coerces to 1
         const currentPage = this.requestPage > -1 && this.requestPage ? this.requestPage : 1;
         // -1 because the page number is 1-indexed
-        const soFarResults = ITEMS_PER_REQUEST * (currentPage - 1) + pageOfRepos.page_count;
-        const remainingResults = pageOfRepos.total_count - soFarResults;
+        const soFarResults = pageOfRepos.processed_count;
 
         console.debug(`Parsed ${soFarResults}/${pageOfRepos.total_count} apps`);
-        if (remainingResults > 0) return currentPage + 1;
+        if (pageOfRepos.has_more) return currentPage + 1;
         console.debug("No more app results");
         break;
       }

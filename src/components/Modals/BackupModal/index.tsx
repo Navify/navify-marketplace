@@ -16,7 +16,7 @@ const BackupModal = () => {
 
   async function saveFile(data: FileSystemWriteChunkType) {
     const date = new Date();
-    const newHandle = await window.showSaveFilePicker({
+    const newHandle = await showSaveFilePicker({
       id: "marketplace-settings-backup",
       suggestedName: `marketplace-settings-${date.toISOString()}.json`,
       excludeAcceptAllOption: true,
@@ -91,7 +91,7 @@ const BackupModal = () => {
    * Prompt user to select a file to import and then run importMarketplace
    */
   const importSettingsFromFile = async () => {
-    const fileHandle = await window.showOpenFilePicker();
+    const fileHandle = await showOpenFilePicker();
     const file = await fileHandle[0].getFile();
     const text = await file.text();
 
