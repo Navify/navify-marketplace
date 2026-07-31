@@ -2,11 +2,12 @@
   "name": "marketplace",
   "version": "1.0.9",
   "private": true,
-  "homepage": "https://github.com/navify/marketplace",
+  "author": "HitBoyXx23",
+  "homepage": "https://github.com/Navify/navify-marketplace",
   "bugs": {
-    "url": "https://github.com/navify/marketplace/issues"
+    "url": "https://github.com/Navify/navify-marketplace/issues"
   },
-  "repository": "github:navify/marketplace",
+  "repository": "github:Navify/navify-marketplace",
   "scripts": {
     "build": "navify-creator",
     "build:local": "node clean-dist.mjs && navify-creator --out=dist --minify",

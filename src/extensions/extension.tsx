@@ -174,9 +174,10 @@ import {
     await initializeExtension(extensionKey);
   }
 
-  const { current_theme: localTheme } = Navify.Config;
-  marketplaceStorage.setItem(LOCALSTORAGE_KEYS.localTheme, localTheme);
   let installedTheme = marketplaceStorage.getItem(LOCALSTORAGE_KEYS.themeInstalled);
+  if (!installedTheme) {
+    marketplaceStorage.setItem(LOCALSTORAGE_KEYS.localTheme, Navify.Config.current_theme || "");
+  }
   if (!installedTheme) {
     const installedThemes = getLocalStorageDataFromKey(LOCALSTORAGE_KEYS.installedThemes, []);
     installedTheme = installedThemes.find((themeKey: string) => marketplaceStorage.getItem(themeKey)) || null;
@@ -188,10 +189,6 @@ import {
       delete installedThemeData.include;
       delete installedThemeData.manifest.include;
       marketplaceStorage.setItem(installedTheme, JSON.stringify(installedThemeData));
-    }
-    if (localTheme && localTheme.toLocaleLowerCase() !== "marketplace") {
-      Navify.showNotification(t("notifications.wrongLocalTheme"), true, 5000);
-      return;
     }
     initializeTheme(installedTheme);
   }

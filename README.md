@@ -21,6 +21,8 @@
 
 Customize your Spotify client directly from within [Navify](https://github.com/Navify/navify-cli).
 
+Created by [HitBoyXx23](https://github.com/HitBoyXx23).
+
 Marketplace allows you to **browse, download, and install** extensions, themes, and CSS snippets with ease. You can also browse custom apps, but will need to do some manual installation to get them working.
 
 Made with [Navify Creator](https://github.com/Navify/navify-creator).

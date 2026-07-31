@@ -1,5 +1,5 @@
 import { t } from "i18next";
-import React, { type Key } from "react";
+import React from "react";
 import { withTranslation } from "react-i18next";
 
 import { CUSTOM_APP_PATH, LOCALSTORAGE_KEYS, SNIPPETS_PAGE_URL } from "../../constants";
@@ -53,7 +53,7 @@ export class Card extends React.Component<
   // Added locally
   menuType: typeof Navify.ReactComponent.Menu;
   localStorageKey: string;
-  key: Key | null = null;
+  key: string | null = null;
   type = Card;
 
   constructor(props: CardProps) {
@@ -74,9 +74,7 @@ export class Card extends React.Component<
 
     const itemOwner = props.item.user || "";
     const itemRepository = props.item.repo || "";
-    const navifyOwned = brandText(itemOwner).toLowerCase() === "navify";
-    const navifyRepository =
-      props.type === "theme" ? "navify-themes" : props.type === "app" || props.type === "extension" ? "navify-marketplace" : itemRepository;
+    const navifyOwned = itemOwner.trim().toLowerCase() === "navify";
 
     this.state = {
       // Initial value. Used to trigger a re-render.
@@ -89,7 +87,7 @@ export class Card extends React.Component<
       externalUrl:
         itemOwner && itemRepository
           ? navifyOwned
-            ? `https://github.com/Navify/${navifyRepository}`
+            ? `https://github.com/Navify/${itemRepository}`
             : `https://github.com/${itemOwner}/${itemRepository}`
           : "",
       lastUpdated: this.props.item.user && this.props.item.repo ? this.props.item.lastUpdated : undefined,
@@ -148,12 +146,6 @@ export class Card extends React.Component<
         console.debug("Theme already installed, removing");
         this.removeTheme(this.localStorageKey);
       } else {
-        const localTheme = marketplaceStorage.getItem(LOCALSTORAGE_KEYS.localTheme);
-        if (localTheme && localTheme.toLowerCase() !== "marketplace") {
-          Navify.showNotification(t("notifications.wrongLocalTheme"), true, 5000);
-          return;
-        }
-
         // Remove theme if already installed, then install the new theme
         this.removeTheme();
         await this.installTheme();
