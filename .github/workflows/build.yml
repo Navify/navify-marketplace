@@ -12,6 +12,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check out Navify Creator
+        uses: actions/checkout@v4
+        with:
+          repository: Navify/navify-creator
+          path: navify-creator
+
+      - name: Link Navify Creator workspace
+        run: ln -s "$GITHUB_WORKSPACE/navify-creator" "$(dirname "$GITHUB_WORKSPACE")/navify-creator"
+
       - name: Install pnpm
         uses: pnpm/action-setup@v2
         with:
@@ -26,6 +35,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Build Navify Creator
+        run: pnpm --dir ../navify-creator/packages/navify-creator build
 
       - name: Build
         run: pnpm build:local

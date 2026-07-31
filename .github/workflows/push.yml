@@ -18,6 +18,15 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Check out Navify Creator
+        uses: actions/checkout@v4
+        with:
+          repository: Navify/navify-creator
+          path: navify-creator
+
+      - name: Link Navify Creator workspace
+        run: ln -s "$GITHUB_WORKSPACE/navify-creator" "$(dirname "$GITHUB_WORKSPACE")/navify-creator"
+
       - name: Install pnpm
         uses: pnpm/action-setup@v2
         with:
@@ -40,6 +49,7 @@ jobs:
       - name: Install Dependencies and Build
         run: |
           pnpm install --frozen-lockfile
+          pnpm --dir ../navify-creator/packages/navify-creator build
           pnpm build:prod
 
       - name: Push New Version
