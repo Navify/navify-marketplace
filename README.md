@@ -37,3 +37,8 @@ Read the [Navify documentation](https://navify.github.io/docs/) to get started.
 - [Marketplace](https://navify.github.io/docs/#marketplace)
 - [Development](https://navify.github.io/docs/#creator)
 
+## Browser version
+
+[Navify for Spotify Web](https://github.com/Navify/navify-browser) uses the same Navify and Spicetify theme, extension, and snippet sources. It installs CSS-based items that can run safely in a browser and excludes desktop-only JavaScript that requires privileged Navify or Spicetify APIs.
+
+The browser extension privacy policy is available in [Navify Docs](https://navify.github.io/docs/privacy.html#policy).
