@@ -1,83 +1,63 @@
 #!/bin/sh
-# Copyright 2019 khanhas. GPL license.
-# Edited from project Denoland install script (https://github.com/denoland/deno_install)
 
-set -e
+set -eu
 
-   
-# download uri
-releases_uri=https://github.com/navify/marketplace/releases
-if [ $# -gt 0 ]; then
-	tag=$1
+command -v curl >/dev/null 2>&1 || { echo "curl is required" >&2; exit 1; }
+command -v unzip >/dev/null 2>&1 || { echo "unzip is required" >&2; exit 1; }
+command -v find >/dev/null 2>&1 || { echo "find is required" >&2; exit 1; }
+command -v navify >/dev/null 2>&1 || { echo "navify is not available in PATH" >&2; exit 1; }
+
+if [ "$#" -gt 0 ]; then
+    tag=${1#v}
+    download_uri="https://github.com/Navify/navify-marketplace/releases/download/v$tag/marketplace.zip"
 else
-	tag=$(curl -LsH 'Accept: application/json' $releases_uri/latest)
-	tag=${tag%\,\"update_url*}
-	tag=${tag##*tag_name\":\"}
-	tag=${tag%\"}
+    download_uri="https://github.com/Navify/navify-marketplace/releases/latest/download/marketplace.zip"
 fi
 
-tag=${tag#v}
+default_color_uri="https://raw.githubusercontent.com/Navify/navify-marketplace/main/resources/color.ini"
+navify_config_dir=${NAVIFY_CONFIG:-"${XDG_CONFIG_HOME:-$HOME/.config}/navify"}
+custom_apps_dir="$navify_config_dir/CustomApps"
+marketplace_dir="$custom_apps_dir/marketplace"
+archive_path="$custom_apps_dir/marketplace.zip"
+temporary_dir="$custom_apps_dir/.marketplace-install-$$"
 
-echo "FETCHING Version $tag"
+cleanup() {
+    rm -f "$archive_path"
+    rm -rf "$temporary_dir"
+}
+trap cleanup EXIT HUP INT TERM
 
-download_uri=$releases_uri/download/v$tag/marketplace.zip
-    default_color_uri="https://raw.githubusercontent.com/navify/marketplace/main/resources/color.ini"
+mkdir -p "$custom_apps_dir" "$temporary_dir"
 
-NAVIFY_CONFIG_DIR="$NAVIFY_CONFIG"
-if [ -z "$NAVIFY_CONFIG_DIR" ]; then
-	NAVIFY_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/navify"
+echo "Downloading Navify Marketplace"
+curl --fail --location --progress-bar --output "$archive_path" "$download_uri"
+
+echo "Extracting Navify Marketplace"
+unzip -q -o "$archive_path" -d "$temporary_dir"
+manifest_path=$(find "$temporary_dir" -maxdepth 4 -type f -name manifest.json -print | head -n 1)
+if [ -z "$manifest_path" ]; then
+    echo "The Marketplace archive does not contain manifest.json" >&2
+    exit 1
 fi
-INSTALL_DIR="$NAVIFY_CONFIG_DIR/CustomApps"
+source_dir=${manifest_path%/*}
 
-if [ ! -d "$INSTALL_DIR" ]; then
-    echo "MAKING FOLDER  $INSTALL_DIR";
-    mkdir -p "$INSTALL_DIR"
-fi
+rm -rf "$marketplace_dir"
+mkdir -p "$marketplace_dir"
+cp -R "$source_dir"/. "$marketplace_dir"/
 
-TAR_FILE="$INSTALL_DIR/marketplace-dist.zip"
-
-echo "DOWNLOADING $download_uri"
-curl --fail --location --progress-bar --output "$TAR_FILE" "$download_uri"
-cd "$INSTALL_DIR"
-
-echo "EXTRACTING"
-unzip -q -d "$INSTALL_DIR/marketplace-tmp" -o "$TAR_FILE"
-
-cd "$INSTALL_DIR/marketplace-tmp"
-echo "COPYING"
-rm -rf "$INSTALL_DIR/marketplace/" "$INSTALL_DIR/marketplace/"
-mv "$INSTALL_DIR/marketplace-tmp/marketplace-dist" "$INSTALL_DIR/marketplace"
-
-echo "INSTALLING"
-cd "$INSTALL_DIR/marketplace"
-
-# Remove old custom app name if exists
-navify config custom_apps navify-marketplace-
-
-# Color injection fix
+navify config custom_apps navify-marketplace- >/dev/null 2>&1 || true
 navify config inject_css 1
 navify config replace_colors 1
 
-current_theme=$(navify config current_theme)
-if [ ${#current_theme} -le 3 ]; then
-    echo "No theme selected, using placeholder theme"
-    if [ ! -d "$NAVIFY_CONFIG_DIR/Themes/marketplace" ]; then
-        echo "MAKING FOLDER  $NAVIFY_CONFIG_DIR/Themes/marketplace";
-        mkdir -p "$NAVIFY_CONFIG_DIR/Themes/marketplace"
-    fi
-    curl --fail --location --progress-bar --output "$NAVIFY_CONFIG_DIR/Themes/marketplace/color.ini" "$default_color_uri"
-    navify config current_theme marketplace;
+current_theme=$(navify config current_theme 2>/dev/null || true)
+if [ -z "$current_theme" ]; then
+    marketplace_theme_dir="$navify_config_dir/Themes/marketplace"
+    mkdir -p "$marketplace_theme_dir"
+    curl --fail --location --progress-bar --output "$marketplace_theme_dir/color.ini" "$default_color_uri"
+    navify config current_theme marketplace
 fi
 
-if navify config custom_apps marketplace ; then
-    echo "Added to config!"
-    echo "APPLYING"
-    navify apply
-else
-    echo "Command failed"
-    echo "Please run \`navify config custom_apps marketplace\` manually "
-    echo "Next run \`navify apply\`"
-fi
+navify config custom_apps marketplace
+navify apply
 
-echo "CLEANING UP"
-rm -rf "$TAR_FILE" "$INSTALL_DIR/marketplace-tmp/"
+echo "Navify Marketplace installed successfully"

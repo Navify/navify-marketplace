@@ -44,7 +44,15 @@ jobs:
           git config --global user.name "Github Actions"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git pull origin HEAD
-          git worktree add -B $TARGET_BRANCH dist origin/$TARGET_BRANCH
+          if git ls-remote --exit-code --heads origin $TARGET_BRANCH >/dev/null 2>&1; then
+            git worktree add -B $TARGET_BRANCH dist origin/$TARGET_BRANCH
+          else
+            git worktree add --detach dist
+            cd dist
+            git switch --orphan $TARGET_BRANCH
+            git rm -rf . || true
+            cd ..
+          fi
 
       - name: Install Dependencies and Build
         run: |
