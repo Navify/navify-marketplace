@@ -13,7 +13,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Check out the code
+      - name: Check out Marketplace
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -23,6 +23,18 @@ jobs:
         with:
           repository: Navify/navify-creator
           path: navify-creator
+
+      - name: Check out Navify CLI
+        uses: actions/checkout@v4
+        with:
+          repository: Navify/navify-cli
+          path: Navify
+
+      - name: Check out Navify Themes
+        uses: actions/checkout@v4
+        with:
+          repository: Navify/navify-themes
+          path: navify-themes
 
       - name: Link Navify Creator workspace
         run: ln -s "$GITHUB_WORKSPACE/navify-creator" "$(dirname "$GITHUB_WORKSPACE")/navify-creator"
@@ -39,31 +51,37 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Configure Git
-        run: |
-          git config --global user.name "Github Actions"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git pull origin HEAD
-          if git ls-remote --exit-code --heads origin $TARGET_BRANCH >/dev/null 2>&1; then
-            git worktree add -B $TARGET_BRANCH dist origin/$TARGET_BRANCH
-          else
-            git worktree add --detach dist
-            cd dist
-            git switch --orphan $TARGET_BRANCH
-            git rm -rf . || true
-            cd ..
-          fi
-
-      - name: Install Dependencies and Build
+      - name: Install dependencies and build
+        env:
+          NAVIFY_PROJECT_ROOT: ${{ github.workspace }}
         run: |
           pnpm install --frozen-lockfile
           pnpm --dir ../navify-creator/packages/navify-creator build
           pnpm build:prod
 
-      - name: Push New Version
+      - name: Prepare dist branch
         run: |
-          export SHORT_SHA=$(git rev-parse --short HEAD)
-          cd dist
-          git add .
-          git diff-index --quiet HEAD || git commit -am "Update to output generated at $SHORT_SHA"
-          git push origin $TARGET_BRANCH
+          git config --global user.name "Github Actions"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          target="$RUNNER_TEMP/navify-marketplace-dist"
+          if git ls-remote --exit-code --heads origin "$TARGET_BRANCH" >/dev/null 2>&1; then
+            git worktree add -B "$TARGET_BRANCH" "$target" "origin/$TARGET_BRANCH"
+          else
+            git worktree add --detach "$target"
+            cd "$target"
+            git switch --orphan "$TARGET_BRANCH"
+            git rm -rf . || true
+          fi
+
+      - name: Push new version
+        run: |
+          output="$GITHUB_WORKSPACE/dist"
+          target="$RUNNER_TEMP/navify-marketplace-dist"
+          find "$target" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -R "$output"/. "$target"/
+          cd "$target"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "Update to output generated at $(git -C "$GITHUB_WORKSPACE" rev-parse --short HEAD)"
+          fi
+          git push origin "$TARGET_BRANCH"

@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 const current = dirname(fileURLToPath(import.meta.url));
 const output = resolve(current, "dist", "builtins");
 const resourcesOutput = resolve(current, "dist", "resources", "assets");
-const project = resolve(current, "..");
+const project = process.env.NAVIFY_PROJECT_ROOT ? resolve(process.env.NAVIFY_PROJECT_ROOT) : resolve(current, "..");
 
 await rm(output, { recursive: true, force: true });
 await rm(resourcesOutput, { recursive: true, force: true });
