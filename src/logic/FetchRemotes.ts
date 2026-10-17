@@ -62,30 +62,10 @@ export async function getTaggedRepos(tag: RepoTopic, page = 1, BLACKLIST: string
     has_more: availableResults.some((result) => ITEMS_PER_REQUEST * (currentPage - 1) + result.items.length < result.total_count)
   };
 }
-// Workaround for not spamming console with 404s
-const script = `
-  self.addEventListener('message', async (event) => {
-    const url = event.data;
-    const response = await fetch(url);
-    const data = await response.json().catch(() => null);
-    self.postMessage(data);
-  });
-`;
-const blob = new Blob([script], { type: "application/javascript" });
-const workerURL = URL.createObjectURL(blob);
-
 async function fetchRepoManifest(url: string) {
-  const worker = new Worker(workerURL);
-  return new Promise((resolver) => {
-    const resolve = (data) => {
-      worker.terminate();
-      resolver(data);
-    };
-
-    worker.postMessage(url);
-    worker.addEventListener("message", (event) => resolve(event.data), { once: true });
-    worker.addEventListener("error", () => resolve(null), { once: true });
-  });
+  const response = await fetch(url).catch(() => null);
+  if (!response?.ok) return null;
+  return response.json().catch(() => null);
 }
 
 // TODO: add try/catch here?
@@ -318,9 +298,9 @@ export async function fetchAppManifest(contents_url: string, branch: string, sta
  * @returns String array of blacklisted repos
  */
 export const getBlacklist = async () => {
-  const json = await fetch(BLACKLIST_URL)
-    .then((res) => res.json())
-    .catch(() => ({}));
+  const response = await fetch(BLACKLIST_URL).catch(() => null);
+  const fallbackResponse = response?.ok ? response : await fetch(`${location.origin}/assets/marketplace/resources/blacklist.json`).catch(() => null);
+  const json = await fallbackResponse?.json().catch(() => ({}));
   return json.repos as string[] | undefined;
 };
 
@@ -338,7 +318,12 @@ export const fetchCssSnippets = async (hideInstalled = false) => {
     return Array.isArray(data) ? data : [];
   };
   const primarySnippets = await fetchSnippets(SNIPPETS_URL);
-  const snippetsJSON = (primarySnippets.length ? primarySnippets : await fetchSnippets(compatibilityURL)) as Snippet[];
+  const compatibilitySnippets = primarySnippets.length ? [] : await fetchSnippets(compatibilityURL);
+  const localSnippets =
+    primarySnippets.length || compatibilitySnippets.length
+      ? []
+      : await fetchSnippets(`${location.origin}/assets/marketplace/resources/snippets.json`);
+  const snippetsJSON = (primarySnippets.length ? primarySnippets : compatibilitySnippets.length ? compatibilitySnippets : localSnippets) as Snippet[];
   snippetsJSON.unshift({
     title: "Navify Focus Layout",
     description: "Creates a calmer listening layout by hiding the activity panel and reducing visual clutter.",

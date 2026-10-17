@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Dropdown, { type Option } from "react-dropdown";
 import { withTranslation } from "react-i18next";
 import type { TabItemConfig } from "../types/marketplace-types";
@@ -56,25 +56,7 @@ const TabBarMore = React.memo<TabBarMoreProps>(function TabBarMore({ items, swit
 });
 
 export const TopBarContent = (props: { links: TabItemConfig[]; activeLink: string; switchCallback: (option: Option) => void }) => {
-  const tabBar = useRef<HTMLElement | null>(null);
-
-  const contextHandler = useCallback(() => {
-    // Move the marketplace-tabBar item to the main-topBar-topbarContent div
-    const topBarContent = document.querySelector(".main-topBar-topbarContentWrapper");
-    if (!tabBar?.current || !topBarContent) {
-      setTimeout(contextHandler, 100);
-      return;
-    }
-
-    topBarContent.appendChild(tabBar.current);
-  }, [tabBar.current]);
-
-  useEffect(() => {
-    contextHandler();
-    return () => (tabBar.current || document.querySelector(".marketplace-tabBar"))?.remove();
-  });
-
-  return <TabBar ref={tabBar} links={props.links} activeLink={props.activeLink} switchCallback={props.switchCallback} />;
+  return <TabBar links={props.links} activeLink={props.activeLink} switchCallback={props.switchCallback} />;
 };
 
 interface TabBarProps {
