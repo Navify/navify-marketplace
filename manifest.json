@@ -12,6 +12,8 @@
   "assets": [
     "builtins/listening-journal.js",
     "builtins/navuryx",
-    "resources/assets"
+    "resources/assets",
+    "resources/snippets.json",
+    "resources/blacklist.json"
   ]
 }
